@@ -1,0 +1,8 @@
+{
+  "libraries": {
+    "**/*.vhd": "string_lib"
+  },
+  "settings": {
+    "V4p.Settings.Formatting.Indentation.TabWidth": 4,
+    "V4p.Settings.Formatting.Indentation.UseTabs": true 
+  }

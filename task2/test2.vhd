@@ -119,7 +119,7 @@ begin
 
     Memory : memory2
         generic map(
-            load_file_name => "pic1.pgm"
+            load_file_name => "/home/topnotches/02203-PROJECT-EDGE/other_images/illusion.pgm"
         )
         -- Result is saved to: load_file_name & "_result.pgm"
         port map(

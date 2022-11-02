@@ -139,6 +139,7 @@ begin
 
             when stRead =>
                 pSetNextValues(stWrite, '0', siWriteCount + TOTAL_WORDS, '1', '0');
+                
             when stWrite =>
                 pSetNextValues(stRead, '1', siReadCount, '1', '1');
                 sauNextImageBuffer <= sauImageBuffer(4 to sauImageBuffer'length - 1) & dataR(dataR'length - (1) downto dataR'length - (BITS_PER_PIXEL)) & dataR(dataR'length - (1 + BITS_PER_PIXEL) downto dataR'length - (BITS_PER_PIXEL*2)) & dataR(dataR'length - (1 + BITS_PER_PIXEL*2) downto dataR'length - (BITS_PER_PIXEL*3)) & dataR(dataR'length - (1 + BITS_PER_PIXEL*3) downto dataR'length - (BITS_PER_PIXEL*4));

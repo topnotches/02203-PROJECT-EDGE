@@ -74,10 +74,12 @@ architecture rtl of acc is
 
     signal sauRowBuffer0, sauRowBuffer1, sauRowBuffer2 : imageBuffer_t;
     attribute ram_style : string;
-    attribute ram_style of sauRowBuffer0, sauRowBuffer1, sauRowBuffer2 : signal is "LUTRAM";
+    attribute ram_style of sauRowBuffer0 : signal is "distributed";
+    attribute ram_style of sauRowBuffer1 : signal is "distributed";
+    attribute ram_style of sauRowBuffer2 : signal is "distributed";
 
     signal slvBufferDataW : word_t := word_zero;
-    signal slvBufferDataR0, slvBufferDataR1, slvBufferDataR2 : word_t := word_zero;
+    signal slvBufferDataR0, slvBufferDataR1, slvBufferDataR2, slvBufferAsynchDataR0, slvBufferAsynchDataR1, slvBufferAsynchDataR2 : word_t := word_zero;
     signal slvTopSlack, slvMiddleSlack, slvBottomSlack, slvNextTopSlack, slvNextMiddleSlack, slvNextBottomSlack: halfword_t := halfword_zero;
 
     constant clvSelectRowOrderInit : std_logic_vector(2 downto 0) := "100";
@@ -269,28 +271,33 @@ begin
                 slvTopSlack <= slvNextTopSlack;
                 slvMiddleSlack <= slvNextMiddleSlack;
                 slvBottomSlack <= slvNextBottomSlack;
-
             end if;
+            
+            slvBufferDataR0 <= slvBufferAsynchDataR0;
+            slvBufferDataR1 <= slvBufferAsynchDataR1;
+            slvBufferDataR2 <= slvBufferAsynchDataR2;
         end if;
     end process FSM_mem;
-    RAM : process(clk, reset)
+    RAM : process(clk, reset, siSelectWord, sauRowBuffer0, sauRowBuffer1, sauRowBuffer2)
     begin
         if rising_edge(clk) then
             if (slvBuffersWE(0) = '1') then
                 sauRowBuffer0((siSelectWord)) <= slvBufferDataW;
             end if;
-            slvBufferDataR0 <= sauRowBuffer0(siSelectWord);
 
             if (slvBuffersWE(1) = '1') then
                 sauRowBuffer1((siSelectWord)) <= slvBufferDataW;
             end if;
-            slvBufferDataR1 <= sauRowBuffer1(siSelectWord);
+    
 
             if (slvBuffersWE(2) = '1') then
                 sauRowBuffer2((siSelectWord)) <= slvBufferDataW;
             end if;
-            slvBufferDataR2 <= sauRowBuffer2(siSelectWord);        
         end if;
+
+        slvBufferAsynchDataR0 <= sauRowBuffer0(siSelectWord);
+        slvBufferAsynchDataR1 <= sauRowBuffer1(siSelectWord);
+        slvBufferAsynchDataR2 <= sauRowBuffer2(siSelectWord);    
     end process RAM;
 
 end rtl;

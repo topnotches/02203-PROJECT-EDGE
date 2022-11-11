@@ -88,6 +88,9 @@ architecture rtl of acc is
     signal slvSelectRowOrder, slvNextSelectRowOrder : std_logic_vector(2 downto 0) := clvSelectRowOrderInit;
 
     signal siSelectWord, siNextSelectWord : integer range 0 to TOTAL_WORDS_WIDTH - 1 := 0;
+
+    signal siLineCount, siNextLineCount : integer range 0 to IMAGE_HEIGHT + 1 := 0;
+
     signal siBottomRowSelect, siMiddleRowSelect, siTopRowSelect : integer range 0 to TOTAL_BUFFER_ROWS - 1 := 0;
     signal slvBottomRowRead, slvNextBottomRowRead, slvMiddleRowRead, slvTopRowRead : word_t := word_z;
     
@@ -114,6 +117,8 @@ architecture rtl of acc is
     signal salvDotPixelsTop    : xyRowPixels_t := (others => (others => '0')); 
     signal salvDotPixelsMiddle : xyRowPixels_t := (others => (others => '0')); 
     signal salvDotPixelsBottom : xyRowPixels_t := (others => (others => '0')); 
+    signal slSetupRun, slNextSetupRun : std_logic := '1';
+
 
 
     -- Port signals
@@ -122,7 +127,8 @@ begin
 
 
     -- Combinatorial circuit
-    process (siAddress, slvSelectRowOrder, siRowOrder0, siRowOrder1, siRowOrder2, salvDotPixelsTop, salvDotPixelsMiddle, salvDotPixelsBottom)
+    process (siAddress, slvSelectRowOrder, siRowOrder0, siRowOrder1, siRowOrder2, salvDotPixelsTop, salvDotPixelsMiddle, salvDotPixelsBottom,
+    slvTopRowRead, slvMiddleRowRead, slvBottomRowRead, slvTopSlack, slvMiddleSlack, slvBottomSlack)
     begin
         addr <= std_logic_vector(to_unsigned(siAddress, addr'length));
         
@@ -226,10 +232,10 @@ begin
     sauGxResults(2) <= unsigned((sasGxPartialSums(2)(sasGxPartialSums(2)'length - 2 downto sasGxPartialSums(2)'length - 1 - byte_t'length)));
     sauGxResults(3) <= unsigned((sasGxPartialSums(3)(sasGxPartialSums(3)'length - 2 downto sasGxPartialSums(3)'length - 1 - byte_t'length)));
     
-    sauFilterResults(0) <= sauGyResults(0);
-    sauFilterResults(1) <= sauGyResults(1);
-    sauFilterResults(2) <= sauGyResults(2);
-    sauFilterResults(3) <= sauGyResults(3);
+    sauFilterResults(0) <= sauGxResults(0) + sauGyResults(0);
+    sauFilterResults(1) <= sauGxResults(1) + sauGyResults(1);
+    sauFilterResults(2) <= sauGxResults(2) + sauGyResults(2);
+    sauFilterResults(3) <= sauGxResults(3) + sauGyResults(3);
 
 
     slvArithmeticResult <= std_logic_vector(sauFilterResults(0)) & std_logic_vector(sauFilterResults(1)) & std_logic_vector(sauFilterResults(2)) & std_logic_vector(sauFilterResults(3));
@@ -238,7 +244,8 @@ begin
     FSM_logic : process(sstState, siWriteCount, siReadCount, siAddress, salvRowBuffer0, salvRowBuffer1, salvRowBuffer2,
                 siTopRowSelect, siMiddleRowSelect,siBottomRowSelect, slvTopSlack, slvMiddleSlack, slvBottomSlack,
                 slvBufferDataR0, slvBufferDataR1, slvBufferDataR2, salvResultBuffer, start, dataR, slvSelectRowOrder,
-                siBottomRowSelect, siRowOrder0, siRowOrder1, siSelectWord)
+                siBottomRowSelect, siRowOrder0, siRowOrder1, siSelectWord, slvBufferDataW, slSetupRun, slvArithmeticResult,
+                slvTopRowRead, slvMiddleRowRead, slvBottomRowRead)
         
         -- Next State Procedure 
         procedure pSetNextValues(nextState : in state_t;
@@ -254,6 +261,7 @@ begin
 
             siNextWriteCount <= siWriteCount;
             siNextReadCount <= siReadCount;
+            siNextLineCount <= siLineCount;
 
             siNextSelectWord <= siSelectWord;
             slvNextSelectRowOrder <= slvSelectRowOrder;
@@ -266,10 +274,10 @@ begin
 
             en <= enable;
             slvBuffersWE <= (others => '0'); 
+            slNextSetupRun <= slSetupRun;
+
             if incrementCounter = '1' then
-
-
-                if siWriteCount < TOTAL_WORDS and siReadCount > COUNTER_LEAD + 3 then
+                if siWriteCount < TOTAL_WORDS and siReadCount > COUNTER_LEAD + 2 then
                     siNextWriteCount <= siWriteCount + 1;
                     we <= writeEnable;
                 end if;
@@ -280,11 +288,13 @@ begin
                     siNextReadCount <= siReadCount + 1;
                 end if;
 
-                if siSelectWord < TOTAL_WORDS_WIDTH - 1 then
+                if siSelectWord < TOTAL_WORDS_WIDTH - 1 and slSetupRun = '0' then
                     siNextSelectWord <= siSelectWord + 1;  
                 else
                     siNextSelectWord <= 0;
 
+                    siNextLineCount <= siLineCount + 1;
+        
                     if siSelectWord = TOTAL_WORDS_WIDTH - 1 then
                         slvNextSelectRowOrder <= slvSelectRowOrder(1 downto 0) & slvSelectRowOrder(2);
                     end if;
@@ -300,7 +310,9 @@ begin
                 slvNextMiddleSlack <= slvMiddleRowRead(slvMiddleSlack'length - 1 downto 0);
                 slvNextBottomSlack <= slvBottomRowRead(slvBottomSlack'length - 1 downto 0);
                 we <= '0';
+                
             end if;
+
         end procedure;
 
     begin
@@ -318,11 +330,6 @@ begin
 
             when stRead =>
                 pSetNextValues(stWrite, '0', siWriteCount + TOTAL_WORDS, '1', '0');
-                slvNextBottomRowRead <= slvBufferDataW;
-
-                
-            when stWrite =>
-                pSetNextValues(stRead, '1', siReadCount, '1', '1');
 
                 if siReadCount >= COUNTER_LEAD then
                     salvNextResultBuffer <= salvResultBuffer(4 to salvNextResultBuffer'length - 1)
@@ -332,6 +339,11 @@ begin
                     & slvArithmeticResult(slvArithmeticResult'length - (1 + BITS_PER_PIXEL*3) downto slvArithmeticResult'length - (BITS_PER_PIXEL*4));
                 end if;
                 
+            when stWrite =>
+                pSetNextValues(stRead, '1', siReadCount, '1', '1');
+
+                slNextSetupRun <= '0';
+                slvNextBottomRowRead <= slvBufferDataW;
             when stDone =>
 
                 finish <= '1';
@@ -355,6 +367,7 @@ begin
 
                 salvResultBuffer <= calvResultBuffer;
             else
+                slSetupRun <= slNextSetupRun;
                 sstState <= sstNextState;
                 siWriteCount <= siNextWriteCount;
                 siReadCount <= siNextReadCount;
@@ -371,6 +384,8 @@ begin
                 slvBottomSlack <= slvNextBottomSlack;
 
                 slvBottomRowRead <= slvNextBottomRowRead;
+
+                siLineCount <= siNextLineCount;
             end if;
             
             slvBufferDataR0 <= slvBufferAsynchDataR0;

@@ -411,6 +411,10 @@ begin
                     siNextSelectWord <= siSelectWord + 1;  
                 else
                     siNextSelectWord <= 0;
+                    if siSelectWord = TOTAL_WORDS_WIDTH - 1 then
+                        slvNextSelectRowOrder <= slvSelectRowOrder(1 downto 0) & slvSelectRowOrder(2);
+                        siNextLineCount <= siLineCount + 1;
+                    end if;
                 end if;
 
                 if siWriteCount = TOTAL_WORDS - 1 then
@@ -453,10 +457,6 @@ begin
                     & slvArithmeticResult(slvArithmeticResult'length - (1 + BITS_PER_PIXEL*3) downto slvArithmeticResult'length - (BITS_PER_PIXEL*4));
                 end if;
                 
-                if siSelectWord = TOTAL_WORDS_WIDTH - 1 then
-                    slvNextSelectRowOrder <= slvSelectRowOrder(1 downto 0) & slvSelectRowOrder(2);
-                    siNextLineCount <= siLineCount + 1;
-                end if;
             when stWrite =>
                 pSetNextValues(stRead, '1', siReadCount, '1', '1');
 

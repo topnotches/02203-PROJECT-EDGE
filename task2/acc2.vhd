@@ -25,6 +25,9 @@ use IEEE.numeric_std.all;
 use work.types.all;
 
 entity acc is
+    generic (
+        truncation : natural range 0 to 7 := 0
+    );
     port(
         clk    : in  bit_t;             -- The clock.
         reset  : in  bit_t;             -- The reset signal. Active high.
@@ -104,13 +107,13 @@ architecture rtl of acc is
 
     signal slvArithmeticResult : word_t := word_zero;
 
-    type filterResults_t is array (0 to 3) of signed(3 + byte_t'length downto 0);
+    type filterResults_t is array (0 to 3) of signed(2 + byte_t'length - truncation downto truncation);
     signal sasGxPartialSums, sasGyPartialSums : filterResults_t := (others => (others => '0'));
     
-    type xyResults_t is array (0 to 3) of unsigned(7 downto 0);
+    type xyResults_t is array (0 to 3) of unsigned(7 downto truncation);
     signal sauGxResults, sauGyResults, sauFilterResults : xyResults_t := (others => (others => '0')); 
 
-    type xyRowPixels_t is array (0 to 5) of std_logic_vector(7 downto 0);
+    type xyRowPixels_t is array (0 to 5) of std_logic_vector(7 downto truncation);
     signal salvDotPixelsTop    : xyRowPixels_t := (others => (others => '0')); 
     signal salvDotPixelsMiddle : xyRowPixels_t := (others => (others => '0')); 
     signal salvDotPixelsBottom : xyRowPixels_t := (others => (others => '0')); 
@@ -137,78 +140,78 @@ begin
         siMiddleRowSelect   <= 2 - siRowOrder1;
         siBottomRowSelect   <= 2 - siRowOrder0;
 
-        salvDotPixelsTop(0) <= slvTopSlack(slvTopSlack'length - 1 downto slvTopSlack'length - byte_t'length);
-        salvDotPixelsTop(1) <= slvTopSlack(slvTopSlack'length - byte_t'length - 1 downto 0);
-        salvDotPixelsTop(2) <= slvTopRowRead(slvTopRowRead'length - 1 downto slvTopRowRead'length - byte_t'length);
-        salvDotPixelsTop(3) <= slvTopRowRead(slvTopRowRead'length - byte_t'length - 1 downto slvTopRowRead'length - byte_t'length*2);
-        salvDotPixelsTop(4) <= slvTopRowRead(slvTopRowRead'length - byte_t'length*2 - 1 downto slvTopRowRead'length - byte_t'length*3);
-        salvDotPixelsTop(5) <= slvTopRowRead(slvTopRowRead'length - byte_t'length*3 - 1 downto slvTopRowRead'length - byte_t'length*4);
+        salvDotPixelsTop(0) <= slvTopSlack(slvTopSlack'length - 1 downto slvTopSlack'length - byte_t'length + truncation);
+        salvDotPixelsTop(1) <= slvTopSlack(slvTopSlack'length - byte_t'length - 1 + truncation downto truncation);
+        salvDotPixelsTop(2) <= slvTopRowRead(slvTopRowRead'length - 1 downto slvTopRowRead'length - byte_t'length + truncation);
+        salvDotPixelsTop(3) <= slvTopRowRead(slvTopRowRead'length - byte_t'length - 1 downto slvTopRowRead'length - byte_t'length*2 + truncation);
+        salvDotPixelsTop(4) <= slvTopRowRead(slvTopRowRead'length - byte_t'length*2 + truncation - 1 downto slvTopRowRead'length - byte_t'length*3 + truncation);
+        salvDotPixelsTop(5) <= slvTopRowRead(slvTopRowRead'length - byte_t'length*3 + truncation - 1 downto slvTopRowRead'length - byte_t'length*4 + truncation);
 
 
-        salvDotPixelsMiddle(0) <= slvMiddleSlack(slvMiddleSlack'length - 1 downto slvMiddleSlack'length - byte_t'length);
-        salvDotPixelsMiddle(1) <= slvMiddleSlack(slvMiddleSlack'length - byte_t'length - 1 downto 0);
-        salvDotPixelsMiddle(2) <= slvMiddleRowRead(slvMiddleRowRead'length - 1 downto slvMiddleRowRead'length - byte_t'length);
-        salvDotPixelsMiddle(3) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length - 1 downto slvMiddleRowRead'length - byte_t'length*2);
-        salvDotPixelsMiddle(4) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length*2 - 1 downto slvMiddleRowRead'length - byte_t'length*3);
-        salvDotPixelsMiddle(5) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length*3 - 1 downto slvMiddleRowRead'length - byte_t'length*4);
+        salvDotPixelsMiddle(0) <= slvMiddleSlack(slvMiddleSlack'length - 1 downto slvMiddleSlack'length - byte_t'length + truncation);
+        salvDotPixelsMiddle(1) <= slvMiddleSlack(slvMiddleSlack'length - byte_t'length - 1 + truncation downto truncation);
+        salvDotPixelsMiddle(2) <= slvMiddleRowRead(slvMiddleRowRead'length - 1 downto slvMiddleRowRead'length - byte_t'length + truncation);
+        salvDotPixelsMiddle(3) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length - 1 downto slvMiddleRowRead'length - byte_t'length*2 + truncation);
+        salvDotPixelsMiddle(4) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length*2 + truncation - 1 downto slvMiddleRowRead'length - byte_t'length*3 + truncation);
+        salvDotPixelsMiddle(5) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length*3 + truncation - 1 downto slvMiddleRowRead'length - byte_t'length*4 + truncation);
 
 
-        salvDotPixelsBottom(0) <= slvBottomSlack(slvBottomSlack'length - 1 downto slvBottomSlack'length - byte_t'length);
-        salvDotPixelsBottom(1) <= slvBottomSlack(slvBottomSlack'length - byte_t'length - 1 downto 0);
-        salvDotPixelsBottom(2) <= slvBottomRowRead(slvBottomRowRead'length - 1 downto slvBottomRowRead'length - byte_t'length);
-        salvDotPixelsBottom(3) <= slvBottomRowRead(slvBottomRowRead'length - byte_t'length - 1 downto slvBottomRowRead'length - byte_t'length*2);
-        salvDotPixelsBottom(4) <= slvBottomRowRead(slvBottomRowRead'length - byte_t'length*2 - 1 downto slvBottomRowRead'length - byte_t'length*3);
-        salvDotPixelsBottom(5) <= slvBottomRowRead(slvBottomRowRead'length - byte_t'length*3 - 1 downto slvBottomRowRead'length - byte_t'length*4);
+        salvDotPixelsBottom(0) <= slvBottomSlack(slvBottomSlack'length - 1 downto slvBottomSlack'length - byte_t'length + truncation);
+        salvDotPixelsBottom(1) <= slvBottomSlack(slvBottomSlack'length - byte_t'length - 1 + truncation downto truncation);
+        salvDotPixelsBottom(2) <= slvBottomRowRead(slvBottomRowRead'length - 1 downto slvBottomRowRead'length - byte_t'length + truncation);
+        salvDotPixelsBottom(3) <= slvBottomRowRead(slvBottomRowRead'length - byte_t'length - 1 downto slvBottomRowRead'length - byte_t'length*2 + truncation);
+        salvDotPixelsBottom(4) <= slvBottomRowRead(slvBottomRowRead'length - byte_t'length*2 + truncation - 1 downto slvBottomRowRead'length - byte_t'length*3 + truncation);
+        salvDotPixelsBottom(5) <= slvBottomRowRead(slvBottomRowRead'length - byte_t'length*3 + truncation - 1 downto slvBottomRowRead'length - byte_t'length*4 + truncation);
 
         sasGxPartialSums(0) <= abs(
-        - signed(std_logic_vector'("0000" & salvDotPixelsTop(0)))            +  signed(std_logic_vector'("0000" & salvDotPixelsTop(2)))
-        - signed(std_logic_vector'("000"  & salvDotPixelsMiddle(0) & "0" ))  +  signed(std_logic_vector'("000"  & salvDotPixelsMiddle(2) & "0"))
-        - signed(std_logic_vector'("0000" & salvDotPixelsBottom(0)))         +  signed(std_logic_vector'("0000" & salvDotPixelsBottom(2)))
+        - signed(std_logic_vector'("000" & salvDotPixelsTop(0)))            +  signed(std_logic_vector'("000" & salvDotPixelsTop(2)))
+        - signed(std_logic_vector'("00"  & salvDotPixelsMiddle(0) & "0" ))  +  signed(std_logic_vector'("00"  & salvDotPixelsMiddle(2) & "0"))
+        - signed(std_logic_vector'("000" & salvDotPixelsBottom(0)))         +  signed(std_logic_vector'("000" & salvDotPixelsBottom(2)))
         );
         sasGxPartialSums(1) <= abs(
-        - signed(std_logic_vector'("0000" & salvDotPixelsTop(1)))            +  signed(std_logic_vector'("0000" & salvDotPixelsTop(3)))
-        - signed(std_logic_vector'("000"  & salvDotPixelsMiddle(1) & "0" ))  +  signed(std_logic_vector'("000"  & salvDotPixelsMiddle(3) & "0"))
-        - signed(std_logic_vector'("0000" & salvDotPixelsBottom(1)))         +  signed(std_logic_vector'("0000" & salvDotPixelsBottom(3)))
+        - signed(std_logic_vector'("000" & salvDotPixelsTop(1)))            +  signed(std_logic_vector'("000" & salvDotPixelsTop(3)))
+        - signed(std_logic_vector'("00"  & salvDotPixelsMiddle(1) & "0" ))  +  signed(std_logic_vector'("00"  & salvDotPixelsMiddle(3) & "0"))
+        - signed(std_logic_vector'("000" & salvDotPixelsBottom(1)))         +  signed(std_logic_vector'("000" & salvDotPixelsBottom(3)))
         );
         sasGxPartialSums(2) <= abs(
-        - signed(std_logic_vector'("0000" & salvDotPixelsTop(2)))            +  signed(std_logic_vector'("0000" & salvDotPixelsTop(4)))
-        - signed(std_logic_vector'("000"  & salvDotPixelsMiddle(2) & "0" ))  +  signed(std_logic_vector'("000"  & salvDotPixelsMiddle(4) & "0"))
-        - signed(std_logic_vector'("0000" & salvDotPixelsBottom(2)))         +  signed(std_logic_vector'("0000" & salvDotPixelsBottom(4)))
+        - signed(std_logic_vector'("000" & salvDotPixelsTop(2)))            +  signed(std_logic_vector'("000" & salvDotPixelsTop(4)))
+        - signed(std_logic_vector'("00"  & salvDotPixelsMiddle(2) & "0" ))  +  signed(std_logic_vector'("00"  & salvDotPixelsMiddle(4) & "0"))
+        - signed(std_logic_vector'("000" & salvDotPixelsBottom(2)))         +  signed(std_logic_vector'("000" & salvDotPixelsBottom(4)))
         );
         sasGxPartialSums(3) <= abs(
-        - signed(std_logic_vector'("0000" & salvDotPixelsTop(3)))            +  signed(std_logic_vector'("0000" & salvDotPixelsTop(5)))
-        - signed(std_logic_vector'("000"  & salvDotPixelsMiddle(3) & "0" ))  +  signed(std_logic_vector'("000"  & salvDotPixelsMiddle(5) & "0"))
-        - signed(std_logic_vector'("0000" & salvDotPixelsBottom(3)))         +  signed(std_logic_vector'("0000" & salvDotPixelsBottom(5)))
+        - signed(std_logic_vector'("000" & salvDotPixelsTop(3)))            +  signed(std_logic_vector'("000" & salvDotPixelsTop(5)))
+        - signed(std_logic_vector'("00"  & salvDotPixelsMiddle(3) & "0" ))  +  signed(std_logic_vector'("00"  & salvDotPixelsMiddle(5) & "0"))
+        - signed(std_logic_vector'("000" & salvDotPixelsBottom(3)))         +  signed(std_logic_vector'("000" & salvDotPixelsBottom(5)))
         );
         
         
         sasGyPartialSums(0) <= abs(
-          signed(std_logic_vector'("0000" & salvDotPixelsTop(0)))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(1) & "0" ))    + signed(std_logic_vector'("0000"  & salvDotPixelsTop(2)))
-        - signed(std_logic_vector'("0000" & salvDotPixelsBottom(0))) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(1) & "0" )) - signed(std_logic_vector'("0000"  & salvDotPixelsBottom(2)))
+          signed(std_logic_vector'("000" & salvDotPixelsTop(0)))    + signed(std_logic_vector'("00"  & salvDotPixelsTop(1) & "0" ))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(2)))
+        - signed(std_logic_vector'("000" & salvDotPixelsBottom(0))) - signed(std_logic_vector'("00"  & salvDotPixelsBottom(1) & "0" )) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(2)))
         );
         sasGyPartialSums(1) <= abs(
-          signed(std_logic_vector'("0000" & salvDotPixelsTop(1)))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(2) & "0" ))    + signed(std_logic_vector'("0000"  & salvDotPixelsTop(3)))
-        - signed(std_logic_vector'("0000" & salvDotPixelsBottom(1))) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(2) & "0" )) - signed(std_logic_vector'("0000"  & salvDotPixelsBottom(3)))
+          signed(std_logic_vector'("000" & salvDotPixelsTop(1)))    + signed(std_logic_vector'("00"  & salvDotPixelsTop(2) & "0" ))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(3)))
+        - signed(std_logic_vector'("000" & salvDotPixelsBottom(1))) - signed(std_logic_vector'("00"  & salvDotPixelsBottom(2) & "0" )) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(3)))
         );
         sasGyPartialSums(2) <= abs(
-          signed(std_logic_vector'("0000" & salvDotPixelsTop(2)))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(3) & "0" ))    + signed(std_logic_vector'("0000"  & salvDotPixelsTop(4)))
-        - signed(std_logic_vector'("0000" & salvDotPixelsBottom(2))) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(3) & "0" )) - signed(std_logic_vector'("0000"  & salvDotPixelsBottom(4)))
+          signed(std_logic_vector'("000" & salvDotPixelsTop(2)))    + signed(std_logic_vector'("00"  & salvDotPixelsTop(3) & "0" ))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(4)))
+        - signed(std_logic_vector'("000" & salvDotPixelsBottom(2))) - signed(std_logic_vector'("00"  & salvDotPixelsBottom(3) & "0" )) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(4)))
         );
         sasGyPartialSums(3) <= abs(
-          signed(std_logic_vector'("0000" & salvDotPixelsTop(3)))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(4) & "0" ))    + signed(std_logic_vector'("0000"  & salvDotPixelsTop(5)))
-        - signed(std_logic_vector'("0000" & salvDotPixelsBottom(3))) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(4) & "0" )) - signed(std_logic_vector'("0000"  & salvDotPixelsBottom(5)))
+          signed(std_logic_vector'("000" & salvDotPixelsTop(3)))    + signed(std_logic_vector'("00"  & salvDotPixelsTop(4) & "0" ))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(5)))
+        - signed(std_logic_vector'("000" & salvDotPixelsBottom(3))) - signed(std_logic_vector'("00"  & salvDotPixelsBottom(4) & "0" )) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(5)))
         );
     
     
-        sauGyResults(0) <= unsigned((sasGyPartialSums(0)(sasGyPartialSums(0)'length - 2 downto sasGyPartialSums(0)'length - 1 - byte_t'length)));
-        sauGyResults(1) <= unsigned((sasGyPartialSums(1)(sasGyPartialSums(1)'length - 2 downto sasGyPartialSums(1)'length - 1 - byte_t'length)));
-        sauGyResults(2) <= unsigned((sasGyPartialSums(2)(sasGyPartialSums(2)'length - 2 downto sasGyPartialSums(2)'length - 1 - byte_t'length)));
-        sauGyResults(3) <= unsigned((sasGyPartialSums(3)(sasGyPartialSums(3)'length - 2 downto sasGyPartialSums(3)'length - 1 - byte_t'length)));
+        sauGyResults(0) <= unsigned((sasGyPartialSums(0)(sasGyPartialSums(0)'length - 1 downto sasGyPartialSums(0)'length - byte_t'length)));
+        sauGyResults(1) <= unsigned((sasGyPartialSums(1)(sasGyPartialSums(1)'length - 1 downto sasGyPartialSums(1)'length - byte_t'length)));
+        sauGyResults(2) <= unsigned((sasGyPartialSums(2)(sasGyPartialSums(2)'length - 1 downto sasGyPartialSums(2)'length - byte_t'length)));
+        sauGyResults(3) <= unsigned((sasGyPartialSums(3)(sasGyPartialSums(3)'length - 1 downto sasGyPartialSums(3)'length - byte_t'length)));
     
-        sauGxResults(0) <= unsigned((sasGxPartialSums(0)(sasGxPartialSums(0)'length - 2 downto sasGxPartialSums(0)'length - 1 - byte_t'length)));
-        sauGxResults(1) <= unsigned((sasGxPartialSums(1)(sasGxPartialSums(1)'length - 2 downto sasGxPartialSums(1)'length - 1 - byte_t'length)));
-        sauGxResults(2) <= unsigned((sasGxPartialSums(2)(sasGxPartialSums(2)'length - 2 downto sasGxPartialSums(2)'length - 1 - byte_t'length)));
-        sauGxResults(3) <= unsigned((sasGxPartialSums(3)(sasGxPartialSums(3)'length - 2 downto sasGxPartialSums(3)'length - 1 - byte_t'length)));
+        sauGxResults(0) <= unsigned((sasGxPartialSums(0)(sasGxPartialSums(0)'length - 1 downto sasGxPartialSums(0)'length - byte_t'length)));
+        sauGxResults(1) <= unsigned((sasGxPartialSums(1)(sasGxPartialSums(1)'length - 1 downto sasGxPartialSums(1)'length - byte_t'length)));
+        sauGxResults(2) <= unsigned((sasGxPartialSums(2)(sasGxPartialSums(2)'length - 1 downto sasGxPartialSums(2)'length - byte_t'length)));
+        sauGxResults(3) <= unsigned((sasGxPartialSums(3)(sasGxPartialSums(3)'length - 1 downto sasGxPartialSums(3)'length - byte_t'length)));
         
         sauFilterResults(0) <= sauGxResults(0) + sauGyResults(0);
         sauFilterResults(1) <= sauGxResults(1) + sauGyResults(1);
@@ -218,63 +221,62 @@ begin
 
         if siLineCount = 1 then
             
-            salvDotPixelsTop(0) <= slvMiddleSlack(slvMiddleSlack'length - 1 downto slvMiddleSlack'length - byte_t'length);
-            salvDotPixelsTop(1) <= slvMiddleSlack(slvMiddleSlack'length - byte_t'length - 1 downto 0);
-            salvDotPixelsTop(2) <= slvMiddleRowRead(slvMiddleRowRead'length - 1 downto slvMiddleRowRead'length - byte_t'length);
-            salvDotPixelsTop(3) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length - 1 downto slvMiddleRowRead'length - byte_t'length*2);
-            salvDotPixelsTop(4) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length*2 - 1 downto slvMiddleRowRead'length - byte_t'length*3);
-            salvDotPixelsTop(5) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length*3 - 1 downto slvMiddleRowRead'length - byte_t'length*4);
+            salvDotPixelsTop(0) <= slvMiddleSlack(slvMiddleSlack'length - 1 downto slvMiddleSlack'length - byte_t'length + truncation);
+            salvDotPixelsTop(1) <= slvMiddleSlack(slvMiddleSlack'length - byte_t'length - 1 + truncation downto truncation);
+            salvDotPixelsTop(2) <= slvMiddleRowRead(slvMiddleRowRead'length - 1 downto slvMiddleRowRead'length - byte_t'length + truncation);
+            salvDotPixelsTop(3) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length - 1 downto slvMiddleRowRead'length - byte_t'length*2 + truncation);
+            salvDotPixelsTop(4) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length*2 + truncation - 1 downto slvMiddleRowRead'length - byte_t'length*3 + truncation);
+            salvDotPixelsTop(5) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length*3 + truncation - 1 downto slvMiddleRowRead'length - byte_t'length*4 + truncation);
 
         end if;
 
         if siLineCount = IMAGE_HEIGHT then
             
-            salvDotPixelsBottom(0) <= slvMiddleSlack(slvMiddleSlack'length - 1 downto slvMiddleSlack'length - byte_t'length);
-            salvDotPixelsBottom(1) <= slvMiddleSlack(slvMiddleSlack'length - byte_t'length - 1 downto 0);
-            salvDotPixelsBottom(2) <= slvMiddleRowRead(slvMiddleRowRead'length - 1 downto slvMiddleRowRead'length - byte_t'length);
-            salvDotPixelsBottom(3) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length - 1 downto slvMiddleRowRead'length - byte_t'length*2);
-            salvDotPixelsBottom(4) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length*2 - 1 downto slvMiddleRowRead'length - byte_t'length*3);
-            salvDotPixelsBottom(5) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length*3 - 1 downto slvMiddleRowRead'length - byte_t'length*4);
+            salvDotPixelsBottom(0) <= slvMiddleSlack(slvMiddleSlack'length - 1 downto slvMiddleSlack'length - byte_t'length + truncation);
+            salvDotPixelsBottom(1) <= slvMiddleSlack(slvMiddleSlack'length - byte_t'length - 1 + truncation downto truncation);
+            salvDotPixelsBottom(2) <= slvMiddleRowRead(slvMiddleRowRead'length - 1 downto slvMiddleRowRead'length - byte_t'length + truncation);
+            salvDotPixelsBottom(3) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length - 1 downto slvMiddleRowRead'length - byte_t'length*2 + truncation);
+            salvDotPixelsBottom(4) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length*2 + truncation - 1 downto slvMiddleRowRead'length - byte_t'length*3 + truncation);
+            salvDotPixelsBottom(5) <= slvMiddleRowRead(slvMiddleRowRead'length - byte_t'length*3 + truncation - 1 downto slvMiddleRowRead'length - byte_t'length*4 + truncation);
 
         end if;
 
         if siLineCount = 1 and siSelectWord = 1 then
             
-            salvDotPixelsTop(1) <= slvMiddleRowRead(slvMiddleRowRead'length - 1 downto slvMiddleRowRead'length - byte_t'length);
-            salvDotPixelsMiddle(1) <= slvMiddleRowRead(slvMiddleRowRead'length - 1 downto slvMiddleRowRead'length - byte_t'length);
-        end if;
-        if siSelectWord = 1 and siLineCount /= 0 then
+            salvDotPixelsTop(1) <= slvMiddleRowRead(slvMiddleRowRead'length - 1 downto slvMiddleRowRead'length - byte_t'length + truncation);
+            salvDotPixelsMiddle(1) <= slvMiddleRowRead(slvMiddleRowRead'length - 1 downto slvMiddleRowRead'length - byte_t'length + truncation);
+        elsif siSelectWord = 1 then
         
             sasGxPartialSums(0) <= abs(
-                - signed(std_logic_vector'("0000" & salvDotPixelsTop(0)))            +  signed(std_logic_vector'("0000" & salvDotPixelsTop(1)))
-                - signed(std_logic_vector'("000"  & salvDotPixelsMiddle(0) & "0" ))  +  signed(std_logic_vector'("000"  & salvDotPixelsMiddle(1) & "0"))
-                - signed(std_logic_vector'("0000" & salvDotPixelsBottom(0)))         +  signed(std_logic_vector'("0000" & salvDotPixelsBottom(1)))
+                - signed(std_logic_vector'("000" & salvDotPixelsTop(0)))            +  signed(std_logic_vector'("000" & salvDotPixelsTop(1)))
+                - signed(std_logic_vector'("00"  & salvDotPixelsMiddle(0) & "0" ))  +  signed(std_logic_vector'("00"  & salvDotPixelsMiddle(1) & "0"))
+                - signed(std_logic_vector'("000" & salvDotPixelsBottom(0)))         +  signed(std_logic_vector'("000" & salvDotPixelsBottom(1)))
             );
             sasGxPartialSums(1) <= abs(
-                - signed(std_logic_vector'("0000" & salvDotPixelsTop(2)))            +  signed(std_logic_vector'("0000" & salvDotPixelsTop(3)))
-                - signed(std_logic_vector'("000"  & salvDotPixelsMiddle(2) & "0" ))  +  signed(std_logic_vector'("000"  & salvDotPixelsMiddle(3) & "0"))
-                - signed(std_logic_vector'("0000" & salvDotPixelsBottom(2)))         +  signed(std_logic_vector'("0000" & salvDotPixelsBottom(3)))
+                - signed(std_logic_vector'("000" & salvDotPixelsTop(2)))            +  signed(std_logic_vector'("000" & salvDotPixelsTop(3)))
+                - signed(std_logic_vector'("00"  & salvDotPixelsMiddle(2) & "0" ))  +  signed(std_logic_vector'("00"  & salvDotPixelsMiddle(3) & "0"))
+                - signed(std_logic_vector'("000" & salvDotPixelsBottom(2)))         +  signed(std_logic_vector'("000" & salvDotPixelsBottom(3)))
             );
             sasGyPartialSums(0) <= abs(
-                  signed(std_logic_vector'("0000" & salvDotPixelsTop(0)))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(1) & "0" ))    + signed(std_logic_vector'("0000"  & salvDotPixelsTop(1)))
-                - signed(std_logic_vector'("0000" & salvDotPixelsBottom(0))) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(1) & "0" )) - signed(std_logic_vector'("0000"  & salvDotPixelsBottom(1)))
+                  signed(std_logic_vector'("000" & salvDotPixelsTop(0)))    + signed(std_logic_vector'("00"  & salvDotPixelsTop(1) & "0" ))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(1)))
+                - signed(std_logic_vector'("000" & salvDotPixelsBottom(0))) - signed(std_logic_vector'("00"  & salvDotPixelsBottom(1) & "0" )) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(1)))
               );
             sasGyPartialSums(1) <= abs(
-                  signed(std_logic_vector'("0000" & salvDotPixelsTop(2)))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(2) & "0" ))    + signed(std_logic_vector'("0000"  & salvDotPixelsTop(3)))
-                - signed(std_logic_vector'("0000" & salvDotPixelsBottom(2))) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(2) & "0" )) - signed(std_logic_vector'("0000"  & salvDotPixelsBottom(3)))
+                  signed(std_logic_vector'("000" & salvDotPixelsTop(2)))    + signed(std_logic_vector'("00"  & salvDotPixelsTop(2) & "0" ))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(3)))
+                - signed(std_logic_vector'("000" & salvDotPixelsBottom(2))) - signed(std_logic_vector'("00"  & salvDotPixelsBottom(2) & "0" )) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(3)))
             );
             
             if siLineCount = 2 then
                 
                 sasGxPartialSums(0) <= abs(
-                    - signed(std_logic_vector'("0000" & salvDotPixelsTop(0)))            +  signed(std_logic_vector'("0000" & salvDotPixelsTop(1)))
-                    - signed(std_logic_vector'("000"  & salvDotPixelsTop(0) & "0" ))     +  signed(std_logic_vector'("000"  & salvDotPixelsTop(1) & "0"))
-                    - signed(std_logic_vector'("0000" & salvDotPixelsBottom(0)))         +  signed(std_logic_vector'("0000" & salvDotPixelsBottom(1)))
+                    - signed(std_logic_vector'("000" & salvDotPixelsTop(0)))            +  signed(std_logic_vector'("000" & salvDotPixelsTop(1)))
+                    - signed(std_logic_vector'("00"  & salvDotPixelsTop(0) & "0" ))     +  signed(std_logic_vector'("00"  & salvDotPixelsTop(1) & "0"))
+                    - signed(std_logic_vector'("000" & salvDotPixelsBottom(0)))         +  signed(std_logic_vector'("000" & salvDotPixelsBottom(1)))
                 );
                 
                 sasGyPartialSums(0) <= abs(
-                    signed(std_logic_vector'("0000" & salvDotPixelsTop(0)))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(1) & "0" ))    + signed(std_logic_vector'("0000"  & salvDotPixelsTop(1)))
-                - signed(std_logic_vector'("0000" & salvDotPixelsBottom(0))) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(1) & "0" )) - signed(std_logic_vector'("0000"  & salvDotPixelsBottom(1)))
+                    signed(std_logic_vector'("000" & salvDotPixelsTop(0)))    + signed(std_logic_vector'("00"  & salvDotPixelsTop(1) & "0" ))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(1)))
+                - signed(std_logic_vector'("000" & salvDotPixelsBottom(0))) - signed(std_logic_vector'("00"  & salvDotPixelsBottom(1) & "0" )) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(1)))
                 );
             end if;
             
@@ -283,52 +285,52 @@ begin
         
             if siLineCount = 2 or siLineCount = 3 then
                 sasGxPartialSums(0) <= abs(
-                    - signed(std_logic_vector'("0000" & salvDotPixelsMiddle(0)))         +  signed(std_logic_vector'("0000" & salvDotPixelsTop(2)))
-                    - signed(std_logic_vector'("000"  & salvDotPixelsMiddle(0) & "0" ))  +  signed(std_logic_vector'("000"  & salvDotPixelsTop(2) & "0"))
-                    - signed(std_logic_vector'("0000" & salvDotPixelsBottom(0)))         +  signed(std_logic_vector'("0000" & salvDotPixelsBottom(2)))
+                    - signed(std_logic_vector'("000" & salvDotPixelsMiddle(0)))         +  signed(std_logic_vector'("000" & salvDotPixelsTop(2)))
+                    - signed(std_logic_vector'("00"  & salvDotPixelsMiddle(0) & "0" ))  +  signed(std_logic_vector'("00"  & salvDotPixelsTop(2) & "0"))
+                    - signed(std_logic_vector'("000" & salvDotPixelsBottom(0)))         +  signed(std_logic_vector'("000" & salvDotPixelsBottom(2)))
                 );
                 sasGxPartialSums(1) <= abs(
-                    - signed(std_logic_vector'("0000" & salvDotPixelsMiddle(1)))         +  signed(std_logic_vector'("0000" & salvDotPixelsTop(3)))
-                    - signed(std_logic_vector'("000"  & salvDotPixelsMiddle(1) & "0" ))  +  signed(std_logic_vector'("000"  & salvDotPixelsTop(3) & "0"))
-                    - signed(std_logic_vector'("0000" & salvDotPixelsBottom(1)))         +  signed(std_logic_vector'("0000" & salvDotPixelsBottom(3)))
+                    - signed(std_logic_vector'("000" & salvDotPixelsMiddle(1)))         +  signed(std_logic_vector'("000" & salvDotPixelsTop(3)))
+                    - signed(std_logic_vector'("00"  & salvDotPixelsMiddle(1) & "0" ))  +  signed(std_logic_vector'("00"  & salvDotPixelsTop(3) & "0"))
+                    - signed(std_logic_vector'("000" & salvDotPixelsBottom(1)))         +  signed(std_logic_vector'("000" & salvDotPixelsBottom(3)))
                 );
                 sasGxPartialSums(2) <= abs(
-                    - signed(std_logic_vector'("0000" & salvDotPixelsTop(2)))            +  signed(std_logic_vector'("0000" & salvDotPixelsTop(4)))
-                    - signed(std_logic_vector'("000"  & salvDotPixelsTop(2) & "0" ))     +  signed(std_logic_vector'("000"  & salvDotPixelsTop(4) & "0"))
-                    - signed(std_logic_vector'("0000" & salvDotPixelsBottom(2)))         +  signed(std_logic_vector'("0000" & salvDotPixelsBottom(4)))
+                    - signed(std_logic_vector'("000" & salvDotPixelsTop(2)))            +  signed(std_logic_vector'("000" & salvDotPixelsTop(4)))
+                    - signed(std_logic_vector'("00"  & salvDotPixelsTop(2) & "0" ))     +  signed(std_logic_vector'("00"  & salvDotPixelsTop(4) & "0"))
+                    - signed(std_logic_vector'("000" & salvDotPixelsBottom(2)))         +  signed(std_logic_vector'("000" & salvDotPixelsBottom(4)))
                 );
                 sasGxPartialSums(3) <= abs(
-                    - signed(std_logic_vector'("0000" & salvDotPixelsTop(3)))            +  signed(std_logic_vector'("0000" & salvDotPixelsTop(5)))
-                    - signed(std_logic_vector'("000"  & salvDotPixelsTop(3) & "0" ))  +  signed(std_logic_vector'("000"  & salvDotPixelsTop(5) & "0"))
-                    - signed(std_logic_vector'("0000" & salvDotPixelsBottom(3)))         +  signed(std_logic_vector'("0000" & salvDotPixelsBottom(5)))
+                    - signed(std_logic_vector'("000" & salvDotPixelsTop(3)))            +  signed(std_logic_vector'("000" & salvDotPixelsTop(5)))
+                    - signed(std_logic_vector'("00"  & salvDotPixelsTop(3) & "0" ))  +  signed(std_logic_vector'("00"  & salvDotPixelsTop(5) & "0"))
+                    - signed(std_logic_vector'("000" & salvDotPixelsBottom(3)))         +  signed(std_logic_vector'("000" & salvDotPixelsBottom(5)))
                 );
                 sasGyPartialSums(0) <= abs(
-                  signed(std_logic_vector'("0000" & salvDotPixelsMiddle(0)))    + signed(std_logic_vector'("000"  & salvDotPixelsMiddle(1) & "0" ))    + signed(std_logic_vector'("0000"  & salvDotPixelsTop(2)))
-                - signed(std_logic_vector'("0000" & salvDotPixelsBottom(0)))    - signed(std_logic_vector'("000"  & salvDotPixelsBottom(1) & "0" )) - signed(std_logic_vector'("0000"  & salvDotPixelsBottom(2)))
+                  signed(std_logic_vector'("000" & salvDotPixelsMiddle(0)))    + signed(std_logic_vector'("00"  & salvDotPixelsMiddle(1) & "0" ))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(2)))
+                - signed(std_logic_vector'("000" & salvDotPixelsBottom(0)))    - signed(std_logic_vector'("00"  & salvDotPixelsBottom(1) & "0" )) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(2)))
                 );
                 sasGyPartialSums(1) <= abs(
-                  signed(std_logic_vector'("0000" & salvDotPixelsMiddle(1)))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(2) & "0" ))    + signed(std_logic_vector'("0000"  & salvDotPixelsTop(3)))
-                - signed(std_logic_vector'("0000" & salvDotPixelsBottom(1))) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(2) & "0" )) - signed(std_logic_vector'("0000"  & salvDotPixelsBottom(3)))
+                  signed(std_logic_vector'("000" & salvDotPixelsMiddle(1)))    + signed(std_logic_vector'("00"  & salvDotPixelsTop(2) & "0" ))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(3)))
+                - signed(std_logic_vector'("000" & salvDotPixelsBottom(1))) - signed(std_logic_vector'("00"  & salvDotPixelsBottom(2) & "0" )) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(3)))
                 );
                 sasGyPartialSums(2) <= abs(
-                  signed(std_logic_vector'("0000" & salvDotPixelsTop(2)))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(3) & "0" ))    + signed(std_logic_vector'("0000"  & salvDotPixelsTop(4)))
-                - signed(std_logic_vector'("0000" & salvDotPixelsBottom(2))) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(3) & "0" )) - signed(std_logic_vector'("0000"  & salvDotPixelsBottom(4)))
+                  signed(std_logic_vector'("000" & salvDotPixelsTop(2)))    + signed(std_logic_vector'("00"  & salvDotPixelsTop(3) & "0" ))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(4)))
+                - signed(std_logic_vector'("000" & salvDotPixelsBottom(2))) - signed(std_logic_vector'("00"  & salvDotPixelsBottom(3) & "0" )) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(4)))
                 );
                 sasGyPartialSums(3) <= abs(
-                  signed(std_logic_vector'("0000" & salvDotPixelsTop(3)))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(4) & "0" ))    + signed(std_logic_vector'("0000"  & salvDotPixelsTop(5)))
-                - signed(std_logic_vector'("0000" & salvDotPixelsBottom(3))) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(4) & "0" )) - signed(std_logic_vector'("0000"  & salvDotPixelsBottom(5)))
+                  signed(std_logic_vector'("000" & salvDotPixelsTop(3)))    + signed(std_logic_vector'("00"  & salvDotPixelsTop(4) & "0" ))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(5)))
+                - signed(std_logic_vector'("000" & salvDotPixelsBottom(3))) - signed(std_logic_vector'("00"  & salvDotPixelsBottom(4) & "0" )) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(5)))
                 );
                 if siLineCount = 3 then
 
                     sasGxPartialSums(0) <= abs(
-                        - signed(std_logic_vector'("0000" & salvDotPixelsTop(0)))         +  signed(std_logic_vector'("0000" & salvDotPixelsTop(2)))
-                        - signed(std_logic_vector'("000"  & salvDotPixelsTop(0) & "0" ))  +  signed(std_logic_vector'("000"  & salvDotPixelsMiddle(2) & "0"))
-                        - signed(std_logic_vector'("0000" & salvDotPixelsBottom(0)))         +  signed(std_logic_vector'("0000" & salvDotPixelsBottom(2)))
+                        - signed(std_logic_vector'("000" & salvDotPixelsTop(0)))         +  signed(std_logic_vector'("000" & salvDotPixelsTop(2)))
+                        - signed(std_logic_vector'("00"  & salvDotPixelsTop(0) & "0" ))  +  signed(std_logic_vector'("00"  & salvDotPixelsMiddle(2) & "0"))
+                        - signed(std_logic_vector'("000" & salvDotPixelsBottom(0)))         +  signed(std_logic_vector'("000" & salvDotPixelsBottom(2)))
                     );
 
                     sasGyPartialSums(0) <= abs(
-                        signed(std_logic_vector'("0000" & salvDotPixelsTop(0)))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(1) & "0" ))    + signed(std_logic_vector'("0000"  & salvDotPixelsTop(2)))
-                    - signed(std_logic_vector'("0000" & salvDotPixelsBottom(0)))    - signed(std_logic_vector'("000"  & salvDotPixelsBottom(1) & "0" )) - signed(std_logic_vector'("0000"  & salvDotPixelsBottom(2)))
+                        signed(std_logic_vector'("000" & salvDotPixelsTop(0)))    + signed(std_logic_vector'("00"  & salvDotPixelsTop(1) & "0" ))    + signed(std_logic_vector'("000"  & salvDotPixelsTop(2)))
+                    - signed(std_logic_vector'("000" & salvDotPixelsBottom(0)))    - signed(std_logic_vector'("00"  & salvDotPixelsBottom(1) & "0" )) - signed(std_logic_vector'("000"  & salvDotPixelsBottom(2)))
                     );
                 end if;
             end if ;
@@ -411,6 +413,8 @@ begin
                     siNextSelectWord <= siSelectWord + 1;  
                 else
                     siNextSelectWord <= 0;
+
+        
                     if siSelectWord = TOTAL_WORDS_WIDTH - 1 then
                         slvNextSelectRowOrder <= slvSelectRowOrder(1 downto 0) & slvSelectRowOrder(2);
                         siNextLineCount <= siLineCount + 1;

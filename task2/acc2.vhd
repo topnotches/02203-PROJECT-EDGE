@@ -512,19 +512,13 @@ begin
                 siWriteCount <= siNextWriteCount;
                 siReadCount <= siNextReadCount;
                 siAddress <= siNextAddress;
-                
                 slvSelectRowOrder <= slvNextSelectRowOrder;
-
                 siSelectWord <= siNextSelectWord;
-
                 salvResultBuffer <= salvNextResultBuffer;
-                
                 slvTopSlack <= slvNextTopSlack;
                 slvMiddleSlack <= slvNextMiddleSlack;
                 slvBottomSlack <= slvNextBottomSlack;
-
                 slvBottomRowRead <= slvNextBottomRowRead;
-
                 siLineCount <= siNextLineCount;
             end if;
             

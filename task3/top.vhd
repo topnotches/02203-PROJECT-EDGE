@@ -32,7 +32,7 @@ end top;
 architecture structure of top is
 
     -- The accelerator clock frequency will be (100MHz/CLK_DIVISION_FACTOR)
-    constant CLK_DIVISION_FACTOR : integer := 1; --(1 to 7)
+    constant CLK_DIVISION_FACTOR : integer := 2; --(1 to 7)
 
     signal clk   : bit_t;
     signal rst_s : std_logic;
